@@ -78,10 +78,12 @@ def analyze(req: AnalyzeRequest):
     if "scorer" not in _state:
         raise HTTPException(503, "models still loading")
     analysis = _state["scorer"].analyze(req.resume_text, req.job_description)
-    from .coach import build_diagnosis
+    from .coach import analyze_impact_metrics, build_diagnosis
+    analysis["impact_analysis"] = analyze_impact_metrics(analysis["section_lines"], req.resume_text)
     analysis["diagnosis"] = build_diagnosis(
         req.resume_text, analysis["section_lines"], analysis["breakdown"],
         req.target_role, analysis["predicted_role"]["role"],
+        impact_analysis=analysis["impact_analysis"],
     )
     if req.want_suggestions:
         from .llm import get_rewrites

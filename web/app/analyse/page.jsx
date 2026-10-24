@@ -224,7 +224,7 @@ export default function AnalyseFlow() {
               <div className="flex rounded-full border border-[rgba(255,255,255,0.1)] bg-[#151519] p-0.5 text-[11px] font-medium">
                 <button
                   onClick={() => setLeftView("pdf")}
-                  className={`rounded-full px-3 py-1 transition-colors ${
+                  className={`rounded-full px-3 py-1 transition-colors cursor-pointer ${
                     leftView === "pdf" ? "bg-[#1c1c22] text-white" : "text-[#888] hover:text-white"
                   }`}
                 >
@@ -232,11 +232,19 @@ export default function AnalyseFlow() {
                 </button>
                 <button
                   onClick={() => setLeftView("heatmap")}
-                  className={`rounded-full px-3 py-1 transition-colors ${
+                  className={`rounded-full px-3 py-1 transition-colors cursor-pointer ${
                     leftView === "heatmap" ? "bg-emerald-500/20 text-emerald-300 font-medium" : "text-[#888] hover:text-white"
                   }`}
                 >
-                  Relevance Heatmap
+                  Heatmap
+                </button>
+                <button
+                  onClick={() => setLeftView("impact")}
+                  className={`rounded-full px-3 py-1 transition-colors cursor-pointer ${
+                    leftView === "impact" ? "bg-cyan-500/20 text-cyan-300 font-medium" : "text-[#888] hover:text-white"
+                  }`}
+                >
+                  XYZ Formula
                 </button>
               </div>
             )}
@@ -249,7 +257,8 @@ export default function AnalyseFlow() {
               entities={result.entities}
               sectionLines={result.section_lines}
               semanticHeatmap={result.semantic_heatmap}
-              defaultMode={pdfFile ? "heatmap" : "preview"}
+              impactAnalysis={result.impact_analysis}
+              defaultMode={pdfFile ? (leftView === "impact" ? "impact" : "heatmap") : "preview"}
             />
           )}
         </div>

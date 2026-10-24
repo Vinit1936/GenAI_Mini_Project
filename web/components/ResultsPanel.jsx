@@ -156,7 +156,14 @@ export default function ResultsPanel({ result }) {
       {/* ---- diagnosis ---- */}
       <div className="card p-6">
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#888]">Diagnosis</p>
+          <div className="flex items-center gap-2.5">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#888]">Diagnosis</p>
+            {result.impact_analysis && (
+              <span className="rounded-full bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 text-[10.5px] font-medium text-cyan-300">
+                XYZ Impact: {result.impact_analysis.score}%
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-[11px] text-[#777]">
             <span className="text-[#5eead4]">{diag.working.length} working</span>·
             <span className="text-[#fda4af]">{diag.problems.length} to fix</span>
