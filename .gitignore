@@ -1,0 +1,23 @@
+# secrets
+ml-service/.env
+.env
+.env*.local
+
+# python
+__pycache__/
+*.pyc
+.testenv/
+.venv/
+ml-service/artifacts_extracted/
+
+# node / next
+web/node_modules/
+web/.next/
+web/out/
+node_modules/
+
+# local qa data (re-downloadable)
+.qa/data/
+.qa/ckpt_ner_local/
+.qa/ner_check/
+*.log

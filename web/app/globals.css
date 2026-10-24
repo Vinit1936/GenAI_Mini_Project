@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   ResumeLens — Framer-style black-canvas design system (design.md)
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+  --canvas: #0b0b0e;
+  --surface-1: #151519;
+  --surface-2: #1c1c22;
+  --hairline: rgba(255, 255, 255, 0.10);
+  --hairline-soft: rgba(255, 255, 255, 0.06);
+  --ink: #ffffff;
+  --ink-muted: #999999;
+  --accent-blue: #0099ff;
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Geist Mono everywhere monospaced */
+.font-mono,
+pre,
+code,
+kbd,
+textarea {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace !important;
+}
+
+@layer components {
+  /* ---------- typography (Geist at low weights) ---------- */
+  .display-xl {
+    font-size: clamp(2.6rem, 6.5vw, 6rem);
+    font-weight: 300;
+    letter-spacing: -0.05em;
+    line-height: 0.98;
+  }
+  .display-lg {
+    font-size: clamp(1.9rem, 4vw, 3.6rem);
+    font-weight: 300;
+    letter-spacing: -0.042em;
+    line-height: 1.02;
+  }
+  .display-md {
+    font-size: clamp(1.3rem, 2vw, 2rem);
+    font-weight: 400;
+    letter-spacing: -0.028em;
+    line-height: 1.12;
+  }
+  .subhead {
+    @apply text-[17px] font-light leading-[1.5] text-[#a5a5ad];
+    letter-spacing: -0.011em;
+  }
+
+  /* ---------- surfaces ---------- */
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--hairline-soft);
+    @apply rounded-[20px];
+  }
+  .card-lg {
+    background: var(--surface-1);
+    border: 1px solid var(--hairline-soft);
+    @apply rounded-[30px];
+  }
+  .spotlight {
+    @apply rounded-[30px] p-8 text-white;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .spotlight-violet {
+    background: linear-gradient(140deg, #6d28d9 0%, #a855f7 55%, #7c3aed 100%);
+  }
+  .spotlight-magenta {
+    background: linear-gradient(140deg, #be185d 0%, #ec4899 55%, #db2777 100%);
+  }
+  .spotlight-orange {
+    background: linear-gradient(140deg, #c2410c 0%, #f97316 50%, #fbbf24 100%);
+  }
+
+  /* ---------- buttons (pills only) ---------- */
+  .pill-primary {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-white px-6 text-[14px] font-medium text-black transition-transform duration-100 hover:brightness-95 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .pill-secondary {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-6 text-[14px] font-light text-white transition-colors;
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+  }
+  .pill-secondary:hover {
+    background: var(--surface-2);
+  }
+  .pill-ghost {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] text-[#999] transition-colors hover:bg-white/5 hover:text-white;
+  }
+
+  /* ---------- inputs ---------- */
+  .input {
+    @apply w-full rounded-[10px] px-4 py-2.5 text-[15px] text-white placeholder:text-[#666] focus:outline-none;
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+  }
+  .input:focus {
+    box-shadow: 0 0 0 1px rgba(0, 153, 255, 0.35);
+  }
+  .input-area {
+    @apply w-full resize-y rounded-[15px] p-4 font-mono text-[13px] leading-6 text-[#e5e5ea] placeholder:text-[#5c5c66] focus:outline-none;
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+  }
+  .input-area:focus {
+    box-shadow: 0 0 0 1px rgba(0, 153, 255, 0.35);
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium;
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[12px] text-[#bbb];
+  }
+}
+
+/* ---------- motion ---------- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scan {
+  0% { top: -12%; }
+  100% { top: 104%; }
+}
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(0, 153, 255, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(0, 153, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 153, 255, 0); }
+}
+
+.animate-fade-up { animation: fade-up 0.5s cubic-bezier(0.21, 1, 0.3, 1) both; }
+.stagger-1 { animation-delay: 0.06s; } .stagger-2 { animation-delay: 0.14s; }
+.stagger-3 { animation-delay: 0.22s; } .stagger-4 { animation-delay: 0.3s; }
+
+.scan-beam {
+  position: absolute;
+  left: 4%; right: 4%;
+  height: 44px;
+  background: linear-gradient(180deg, transparent, rgba(0, 153, 255, 0.16) 45%, rgba(0, 153, 255, 0.5) 50%, rgba(0, 153, 255, 0.16) 55%, transparent);
+  animation: scan 2.1s ease-in-out infinite alternate;
+  border-radius: 8px;
+}
+
+.skeleton {
+  @apply rounded-lg;
+  background: var(--surface-2);
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  background-size: 400px 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.status-live { animation: pulse-dot 2s infinite; }
+
+/* ---------- scrollbars ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply rounded-full; background: rgba(255, 255, 255, 0.12); border: 2px solid var(--canvas); }
+::selection { background: rgba(0, 153, 255, 0.3); }
