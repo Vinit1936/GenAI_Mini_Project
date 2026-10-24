@@ -62,6 +62,18 @@ def build_diagnosis(resume_text, section_lines, breakdown, target_role, predicte
             "fix": "Mirror the job description's terminology in your summary and skills.",
         })
 
+    # ---------------- semantic relevance attribution ----------------
+    attrib = b.get("semantic_similarity", {}).get("attribution", {})
+    if attrib.get("high", 0) >= 2:
+        working.append(f"{attrib['high']} resume bullet point(s) show strong semantic alignment with target JD requirements.")
+    if attrib.get("low", 0) >= 3:
+        problems.append({
+            "kind": "low_relevance_bullets", "severity": "low",
+            "title": f"{attrib['low']} low-relevance bullet(s)",
+            "detail": "Several bullets have low semantic overlap with the specific requirements in this job posting.",
+            "fix": "Toggle the 'Relevance Heatmap' on the left preview to see flagged lines and tailor them.",
+        })
+
     # ---------------- experience bullets ----------------
     exp = _bullets(section_lines)
     quantified = [l for l in exp if any(c.isdigit() for c in l)]

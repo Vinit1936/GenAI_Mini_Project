@@ -41,12 +41,22 @@ export default function ResultsPanel({ result }) {
           </div>
           <div className="w-full space-y-3 self-stretch border-t border-[rgba(255,255,255,0.07)] pt-5 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
             {Object.entries(b).map(([k, v]) => (
-              <div key={k} className="flex items-center gap-4 text-[13px]">
-                <span className="w-[150px] shrink-0 text-[#999]">{k.replace(/_/g, " ")}</span>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-                  <div className="h-full rounded-full bg-white/60" style={{ width: `${v.score}%` }} />
+              <div key={k} className="space-y-1">
+                <div className="flex items-center gap-4 text-[13px]">
+                  <span className="w-[150px] shrink-0 text-[#999]">{k.replace(/_/g, " ")}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
+                    <div className="h-full rounded-full bg-white/60" style={{ width: `${v.score}%` }} />
+                  </div>
+                  <span className="w-[92px] shrink-0 text-right text-[#bbb]">{v.score} × {v.weight}</span>
                 </div>
-                <span className="w-[92px] shrink-0 text-right text-[#bbb]">{v.score} × {v.weight}</span>
+                {k === "semantic_similarity" && v.attribution && (
+                  <div className="flex items-center gap-2 pl-[150px] text-[11px] text-[#888]">
+                    <span className="text-emerald-400 font-medium">🟢 {v.attribution.high} high fit</span>·
+                    <span className="text-amber-400">🟡 {v.attribution.moderate} moderate</span>·
+                    <span className="text-zinc-500">⚪ {v.attribution.low} low</span>
+                    <span className="text-[10px] text-[#666] ml-auto">see Heatmap on left</span>
+                  </div>
+                )}
               </div>
             ))}
             <p className="pt-2 text-[11px] leading-4 text-[#777]">

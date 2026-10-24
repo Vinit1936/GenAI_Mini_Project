@@ -38,11 +38,78 @@ class MatchScorer:
     def __init__(self, ner: ResumeNER, role: RoleClassifier, sections: SectionClassifier, st_model):
         self.ner, self.role, self.sections, self.st = ner, role, sections, st_model
 
-    # ---- component 1: semantic similarity -------------------------------------------
+    # ---- component 1: semantic similarity & sentence heatmap -------------------------
     def semantic_similarity(self, resume_clean: str, jd: str) -> float:
         emb = self.st.encode([resume_clean[:6000], jd[:6000]], normalize_embeddings=True)
         sim = float(emb[0] @ emb[1])
         return max(0.0, min(1.0, (sim + 1) / 2))        # cosine [-1,1] -> [0,1]
+
+    def compute_semantic_heatmap(self, resume_lines: list, jd: str) -> tuple:
+        """Sentence-level explainable attribution: encodes each bullet/line and matches
+        against key JD requirement sentences. Returns (heatmap_list, summary_counts)."""
+        jd_lines = [
+            ln.strip("-*\u2022 \t") for ln in jd.splitlines()
+            if len(ln.strip("-*\u2022 \t")) >= 15
+        ]
+        if not jd_lines:
+            jd_lines = [jd[:2000]]
+
+        qualifying_indices = []
+        qualifying_texts = []
+        for i, row in enumerate(resume_lines):
+            line = row["line"].strip()
+            # Skip empty lines, pure section titles, and single short words
+            if len(line) >= 14 and not re.match(r"^(?:education|experience|projects?|skills?|certifications?|summary)$", line, re.I):
+                qualifying_indices.append(i)
+                qualifying_texts.append(line)
+
+        heatmap = []
+        for row in resume_lines:
+            heatmap.append({
+                "line": row["line"],
+                "section": row["section"],
+                "tier": "neutral",
+                "score": 0.0,
+                "similarity": 0.0,
+                "matched_requirement": ""
+            })
+
+        if not qualifying_texts:
+            return heatmap, {"high": 0, "moderate": 0, "low": 0}
+
+        jd_embs = self.st.encode(jd_lines[:30], normalize_embeddings=True)
+        line_embs = self.st.encode(qualifying_texts, normalize_embeddings=True)
+        sim_matrix = line_embs @ jd_embs.T
+
+        high_count = 0
+        mod_count = 0
+        low_count = 0
+
+        for q_idx, orig_idx in enumerate(qualifying_indices):
+            best_jd_idx = int(sim_matrix[q_idx].argmax())
+            best_sim = float(sim_matrix[q_idx][best_jd_idx])
+            matched_req = jd_lines[best_jd_idx]
+
+            # Linear mapping from similarity [0.22, 0.70] to 0-100%
+            score = round(max(0.0, min(1.0, (best_sim - 0.22) / 0.48)) * 100, 1)
+
+            if best_sim >= 0.54:
+                tier = "high"
+                high_count += 1
+            elif best_sim >= 0.38:
+                tier = "moderate"
+                mod_count += 1
+            else:
+                tier = "low"
+                low_count += 1
+
+            heatmap[orig_idx]["tier"] = tier
+            heatmap[orig_idx]["score"] = score
+            heatmap[orig_idx]["similarity"] = round(best_sim, 3)
+            heatmap[orig_idx]["matched_requirement"] = matched_req[:140]
+
+        summary = {"high": high_count, "moderate": mod_count, "low": low_count}
+        return heatmap, summary
 
     # ---- component 2: skill overlap --------------------------------------------------
     _SPLIT_RE = re.compile(r"[,;•|·/]|\s{2,}|\bor\b|\band\b")
@@ -300,6 +367,7 @@ class MatchScorer:
         section_info = self.sections.section_presence(resume_text, lines=resume_lines)
 
         sem = self.semantic_similarity(resume_clean, jd_text)
+        heatmap, heatmap_summary = self.compute_semantic_heatmap(resume_lines, jd_text)
         skill_score, matched_skills, missing_skills, exact_matches, semantic_matches = self.skill_overlap(
             self.ner.by_type(resume_text), resume_lines, jd_text
         )
@@ -316,7 +384,11 @@ class MatchScorer:
         return {
             "overall_score": round(total, 1),
             "breakdown": {
-                "semantic_similarity": {"score": round(sem * 100, 1), "weight": config.W_SEMANTIC},
+                "semantic_similarity": {
+                    "score": round(sem * 100, 1),
+                    "weight": config.W_SEMANTIC,
+                    "attribution": heatmap_summary,
+                },
                 "skill_overlap": {
                     "score": round(skill_score * 100, 1),
                     "weight": config.W_SKILL,
@@ -333,5 +405,6 @@ class MatchScorer:
             "entities": entities,
             "sections": section_info,
             "section_lines": [{"line": r["line"], "section": r["section"]} for r in resume_lines],
+            "semantic_heatmap": heatmap,
             "privacy": {"names_stripped": len(name_spans), "scored_text_length": len(resume_clean)},
         }

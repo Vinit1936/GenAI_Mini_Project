@@ -20,6 +20,7 @@ export default function AnalyseFlow() {
   const [customJd, setCustomJd] = useState("");
   const [result, setResult] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);   // original File, when a PDF was uploaded
+  const [leftView, setLeftView] = useState("pdf");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef(null);
@@ -217,11 +218,39 @@ export default function AnalyseFlow() {
 
       <div className="grid gap-6 lg:grid-cols-[2fr_3fr]">
         <div className="lg:sticky lg:top-20 lg:self-start">
-          <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.14em] text-[#888]">Resume X-ray</p>
-          {pdfFile ? (
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#888]">Resume X-ray</p>
+            {pdfFile && (
+              <div className="flex rounded-full border border-[rgba(255,255,255,0.1)] bg-[#151519] p-0.5 text-[11px] font-medium">
+                <button
+                  onClick={() => setLeftView("pdf")}
+                  className={`rounded-full px-3 py-1 transition-colors ${
+                    leftView === "pdf" ? "bg-[#1c1c22] text-white" : "text-[#888] hover:text-white"
+                  }`}
+                >
+                  PDF Document
+                </button>
+                <button
+                  onClick={() => setLeftView("heatmap")}
+                  className={`rounded-full px-3 py-1 transition-colors ${
+                    leftView === "heatmap" ? "bg-emerald-500/20 text-emerald-300 font-medium" : "text-[#888] hover:text-white"
+                  }`}
+                >
+                  Relevance Heatmap
+                </button>
+              </div>
+            )}
+          </div>
+          {pdfFile && leftView === "pdf" ? (
             <PdfXray file={pdfFile} entities={result.entities} />
           ) : (
-            <ResumeXray text={resume} entities={result.entities} sectionLines={result.section_lines} />
+            <ResumeXray
+              text={resume}
+              entities={result.entities}
+              sectionLines={result.section_lines}
+              semanticHeatmap={result.semantic_heatmap}
+              defaultMode={pdfFile ? "heatmap" : "preview"}
+            />
           )}
         </div>
         <ResultsPanel result={result} />
