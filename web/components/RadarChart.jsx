@@ -34,13 +34,14 @@ export default function RadarChart({ breakdown }) {
         return <line key={label} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,0.08)" />;
       })}
       <polygon points={dataPoly} fill="url(#radarFill)" stroke="#34d399" strokeWidth="2"
-               style={{ transformOrigin: `${cx}px ${cy}px`, animation: "fade-up .6s ease both" }} />
+               style={{ transformOrigin: `${cx}px ${cy}px`, transition: "all 0.4s ease-out" }} />
       {axes.map(([label, v], i) => {
         const [dx, dy] = pt(i, Math.max(0.03, v / 100));
         const [lx, ly] = pt(i, 1.24);
         return (
           <g key={label}>
-            <circle cx={dx} cy={dy} r="3.5" fill="#34d399" stroke="#0a0e13" strokeWidth="1.5" />
+            <circle cx={dx} cy={dy} r="3.5" fill="#34d399" stroke="#0a0e13" strokeWidth="1.5"
+                    style={{ transition: "cx 0.4s ease-out, cy 0.4s ease-out" }} />
             <text x={lx} y={ly - 4} textAnchor="middle" fontSize="11" fill="#a1a1aa">{label}</text>
             <text x={lx} y={ly + 9} textAnchor="middle" fontSize="11" fontWeight="600" fill="#e4e4e7">
               {Math.round(v)}

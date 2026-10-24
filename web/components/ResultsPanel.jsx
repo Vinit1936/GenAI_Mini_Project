@@ -22,11 +22,51 @@ function Block({ title, children, right }) {
 export default function ResultsPanel({ result }) {
   const b = result.breakdown;
   const [copied, setCopied] = useState(false);
+  const [simulatedSkills, setSimulatedSkills] = useState([]);
+  const [simulatedSections, setSimulatedSections] = useState([]);
+
   const matched = b.skill_overlap.matched || [];
   const missing = b.skill_overlap.missing || [];
-  const coverage = matched.length + missing.length
-    ? Math.round((matched.length / (matched.length + missing.length)) * 100)
-    : 0;
+  const totalSkills = Math.max(1, matched.length + missing.length);
+
+  const activeSimSkills = simulatedSkills.filter((s) => missing.includes(s));
+  const simMatchedCount = matched.length + activeSimSkills.length;
+  const simCoverage = Math.round((simMatchedCount / totalSkills) * 100);
+  const simSkillScore = Math.min(100, Math.round((simMatchedCount / totalSkills) * 100));
+
+  const standardSections = ["experience", "education", "project", "skills"];
+  const presentSections = b.section_completeness.present || [];
+  const missingSections = standardSections.filter((s) => !presentSections.includes(s));
+  const activeSimSections = simulatedSections.filter((s) => missingSections.includes(s));
+  const totalPresentCount = presentSections.length + activeSimSections.length;
+  const simSectionScore = Math.min(100, Math.round((totalPresentCount / 4) * 100));
+
+  const simOverall = Math.min(
+    100,
+    Math.round(
+      b.semantic_similarity.score * b.semantic_similarity.weight +
+      simSkillScore * b.skill_overlap.weight +
+      simSectionScore * b.section_completeness.weight +
+      b.role_alignment.score * b.role_alignment.weight
+    )
+  );
+
+  const delta = Math.max(0, Math.round((simOverall - result.overall_score) * 10) / 10);
+  const ptsPerSkill = Math.round((100 / totalSkills) * b.skill_overlap.weight * 10) / 10;
+  const ptsPerSection = Math.round(25 * b.section_completeness.weight * 10) / 10;
+
+  const activeBreakdown = {
+    ...b,
+    skill_overlap: {
+      ...b.skill_overlap,
+      score: simSkillScore,
+    },
+    section_completeness: {
+      ...b.section_completeness,
+      score: simSectionScore,
+    },
+  };
+
   const diag = result.diagnosis || { working: [], problems: [] };
   const rw = result.rewrites || { available: false, rewrites: [] };
 
@@ -34,31 +74,78 @@ export default function ResultsPanel({ result }) {
     <div className="space-y-5">
       {/* ---- ATS score ---- */}
       <div className="card-lg p-7">
+        {delta > 0 && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/35 bg-emerald-950/40 px-4 py-2.5 shadow-[0_0_20px_rgba(16,185,129,0.12)]">
+            <div className="flex flex-wrap items-center gap-2.5 text-xs text-emerald-200">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <div>
+                <span className="font-semibold text-emerald-300">🔮 What-If Simulator Active: </span>
+                <span className="text-emerald-200/90">
+                  +{activeSimSkills.length} skill{activeSimSkills.length === 1 ? "" : "s"}
+                  {activeSimSections.length > 0 ? ` & +${activeSimSections.length} section` : ""}
+                </span>
+              </div>
+              <span className="rounded-md border border-emerald-500/35 bg-emerald-500/20 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-300">
+                +{delta % 1 === 0 ? delta : delta.toFixed(1)} pts → {simOverall}/100
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setSimulatedSkills([]);
+                setSimulatedSections([]);
+              }}
+              className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            >
+              Reset Simulator
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col items-center gap-4 lg:flex-row lg:gap-10">
           <div className="flex shrink-0 flex-col items-center">
             <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#888]">ATS Match Score</p>
-            <ScoreRing score={result.overall_score} size={185} />
+            <ScoreRing score={simOverall} size={185} delta={delta} />
           </div>
           <div className="w-full space-y-3 self-stretch border-t border-[rgba(255,255,255,0.07)] pt-5 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
-            {Object.entries(b).map(([k, v]) => (
-              <div key={k} className="space-y-1">
-                <div className="flex items-center gap-4 text-[13px]">
-                  <span className="w-[150px] shrink-0 text-[#999]">{k.replace(/_/g, " ")}</span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-                    <div className="h-full rounded-full bg-white/60" style={{ width: `${v.score}%` }} />
+            {Object.entries(activeBreakdown).map(([k, v]) => {
+              const origScore = b[k].score;
+              const isSim = v.score !== origScore;
+              return (
+                <div key={k} className="space-y-1">
+                  <div className="flex items-center gap-4 text-[13px]">
+                    <span className="w-[150px] shrink-0 text-[#999]">{k.replace(/_/g, " ")}</span>
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${isSim ? "bg-emerald-400" : "bg-white/60"}`}
+                        style={{ width: `${v.score}%` }}
+                      />
+                    </div>
+                    <span className="w-[92px] shrink-0 text-right text-[#bbb]">
+                      {isSim ? (
+                        <>
+                          <span className="text-emerald-400 font-semibold">{v.score}</span>
+                          <span className="text-[10px] text-emerald-400/80 ml-0.5">+{v.score - origScore}</span>
+                        </>
+                      ) : (
+                        v.score
+                      )}{" "}
+                      × {v.weight}
+                    </span>
                   </div>
-                  <span className="w-[92px] shrink-0 text-right text-[#bbb]">{v.score} × {v.weight}</span>
+                  {k === "semantic_similarity" && v.attribution && (
+                    <div className="flex items-center gap-2 pl-[150px] text-[11px] text-[#888]">
+                      <span className="text-emerald-400 font-medium">🟢 {v.attribution.high} high fit</span>·
+                      <span className="text-amber-400">🟡 {v.attribution.moderate} moderate</span>·
+                      <span className="text-zinc-500">⚪ {v.attribution.low} low</span>
+                      <span className="text-[10px] text-[#666] ml-auto">see Heatmap on left</span>
+                    </div>
+                  )}
                 </div>
-                {k === "semantic_similarity" && v.attribution && (
-                  <div className="flex items-center gap-2 pl-[150px] text-[11px] text-[#888]">
-                    <span className="text-emerald-400 font-medium">🟢 {v.attribution.high} high fit</span>·
-                    <span className="text-amber-400">🟡 {v.attribution.moderate} moderate</span>·
-                    <span className="text-zinc-500">⚪ {v.attribution.low} low</span>
-                    <span className="text-[10px] text-[#666] ml-auto">see Heatmap on left</span>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
             <p className="pt-2 text-[11px] leading-4 text-[#777]">
               weights are fixed and visible — 40% semantic · 30% skills · 15% sections · 15% role
             </p>
@@ -159,18 +246,31 @@ export default function ResultsPanel({ result }) {
           title="Skill coverage"
           right={
             <div className="flex items-center gap-2">
+              {activeSimSkills.length > 0 && (
+                <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10.5px] font-medium text-emerald-300">
+                  +{activeSimSkills.length} simulated
+                </span>
+              )}
               {b.skill_overlap.semantic_matches?.length > 0 && (
                 <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                   {b.skill_overlap.semantic_matches.length} semantic
                 </span>
               )}
-              <span className="text-[12px] text-[#999]">{coverage}%</span>
+              <span className={`text-[12px] ${activeSimSkills.length > 0 ? "text-emerald-400 font-semibold" : "text-[#999]"}`}>
+                {simCoverage}%
+              </span>
             </div>
           }
         >
           <div className="mb-4 h-2 overflow-hidden rounded-full bg-white/[0.07]">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#0099ff] to-[#38bdf8] transition-all duration-700"
-              style={{ width: `${coverage}%` }} />
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${
+                activeSimSkills.length > 0
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_12px_rgba(52,211,153,0.3)]"
+                  : "bg-gradient-to-r from-[#0099ff] to-[#38bdf8]"
+              }`}
+              style={{ width: `${simCoverage}%` }}
+            />
           </div>
           <div className="flex flex-wrap gap-1.5">
             {matched.length === 0 && missing.length === 0 && (
@@ -192,15 +292,41 @@ export default function ResultsPanel({ result }) {
                 ≈ {m.jd_skill} <span className="opacity-70 text-[10.5px]">({m.resume_skill})</span>
               </span>
             ))}
-            {/* Missing skills */}
-            {missing.map((s) => (
-              <span key={s} className="chip border-[#fb7185]/25 bg-[#fb7185]/10 text-[#fda4af]" title="Missing in resume">
-                + {s}
-              </span>
-            ))}
+            {/* Missing skills (Interactive counterfactual simulation) */}
+            {missing.map((s) => {
+              const isSimulated = activeSimSkills.includes(s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    setSimulatedSkills((prev) =>
+                      prev.includes(s) ? prev.filter((item) => item !== s) : [...prev, s]
+                    );
+                  }}
+                  className={`chip transition-all duration-200 cursor-pointer ${
+                    isSimulated
+                      ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-[0_0_10px_rgba(52,211,153,0.25)] ring-1 ring-emerald-400/50"
+                      : "border-[#fb7185]/25 bg-[#fb7185]/10 text-[#fda4af] hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-300"
+                  }`}
+                  title={
+                    isSimulated
+                      ? `Click to remove '${s}' from simulation`
+                      : `Click to simulate adding '${s}' (+~${ptsPerSkill} pts to ATS score)`
+                  }
+                >
+                  {isSimulated ? `✨ ${s} (+${ptsPerSkill} pts) ✕` : `+ ${s}`}
+                </button>
+              );
+            })}
           </div>
+          {missing.length > 0 && (
+            <p className="mt-2.5 text-[10.5px] text-[#777] flex items-center gap-1.5">
+              <span className="text-[#a1a1aa]">💡 Tip:</span> Click any missing skill above to simulate score impact.
+            </p>
+          )}
           {b.skill_overlap.semantic_matches?.length > 0 && (
-            <p className="mt-3.5 text-[11px] leading-4 text-[#8a8a94] border-t border-white/[0.05] pt-2.5">
+            <p className="mt-2.5 text-[11px] leading-4 text-[#8a8a94] border-t border-white/[0.05] pt-2.5">
               <span className="text-emerald-400 font-medium">⚡ Semantic Match:</span> Synonyms &amp; acronyms are recognized via MiniLM embeddings without strict keyword penalties.
             </p>
           )}
@@ -210,21 +336,60 @@ export default function ResultsPanel({ result }) {
           <p className="text-[15px] font-semibold tracking-[-0.01em]">{result.predicted_role.role}
             <span className="ml-2 text-[11px] font-normal text-[#888]">{(result.predicted_role.confidence * 100).toFixed(0)}% conf</span></p>
           <div className="mt-1 flex justify-center">
-            <RadarChart breakdown={b} />
+            <RadarChart breakdown={activeBreakdown} />
           </div>
         </Block>
       </div>
 
       {/* ---- sections ---- */}
-      <Block title="Section completeness" right={<span className="text-[12px] text-[#999]">{b.section_completeness.score}/100</span>}>
-        <div className="flex flex-wrap gap-2">
-          {["experience", "education", "project", "skills"].map((s) => {
-            const present = b.section_completeness.present.includes(s);
-            return (
-              <span key={s}
-                className={`chip ${present ? "border-[#2dd4bf]/30 bg-[#2dd4bf]/10 text-[#5eead4]" : "border-[#fb7185]/25 bg-[#fb7185]/10 text-[#fda4af] line-through"}`}>
-                {present ? "✓" : "✕"} {s}
+      <Block
+        title="Section completeness"
+        right={
+          <div className="flex items-center gap-2">
+            {activeSimSections.length > 0 && (
+              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10.5px] font-medium text-emerald-300">
+                +{activeSimSections.length} simulated
               </span>
+            )}
+            <span className={`text-[12px] ${activeSimSections.length > 0 ? "text-emerald-400 font-semibold" : "text-[#999]"}`}>
+              {simSectionScore}/100
+            </span>
+          </div>
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          {standardSections.map((s) => {
+            const present = presentSections.includes(s);
+            const isSimulated = activeSimSections.includes(s);
+            if (present) {
+              return (
+                <span key={s} className="chip border-[#2dd4bf]/30 bg-[#2dd4bf]/10 text-[#5eead4]">
+                  ✓ {s}
+                </span>
+              );
+            }
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  setSimulatedSections((prev) =>
+                    prev.includes(s) ? prev.filter((item) => item !== s) : [...prev, s]
+                  );
+                }}
+                className={`chip transition-all duration-200 cursor-pointer ${
+                  isSimulated
+                    ? "border-emerald-400 bg-emerald-500/20 text-emerald-200 shadow-[0_0_10px_rgba(52,211,153,0.25)] ring-1 ring-emerald-400/50"
+                    : "border-[#fb7185]/25 bg-[#fb7185]/10 text-[#fda4af] line-through hover:no-underline hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-300"
+                }`}
+                title={
+                  isSimulated
+                    ? `Click to remove '${s}' section from simulation`
+                    : `Click to simulate adding '${s}' section (+~${ptsPerSection} pts to ATS score)`
+                }
+              >
+                {isSimulated ? `✨ ${s} (+${ptsPerSection} pts) ✕` : `✕ ${s}`}
+              </button>
             );
           })}
         </div>
