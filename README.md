@@ -8,22 +8,38 @@ baseline) + MiniLM sentence embeddings + a Groq LLM advice layer.
 
 ## Run it (2 terminals)
 
-**Terminal 1 — ML service** (first time: `pip install -r requirements.txt`):
+**Prerequisites:** Python 3.10+ and Node.js 18+
 
-```bat
-cd D:\resume-analyser\ml-service
+```bash
+git clone https://github.com/Vinit1936/GenAI_Mini_Project.git
+cd GenAI_Mini_Project
+```
+
+**Terminal 1 — ML service** (run from repo root):
+
+```bash
+cd ml-service
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+pip install -r requirements.txt  # first time only
 uvicorn app.main:app --port 8000
 ```
 
-Optional, for AI suggestions: get a free key at console.groq.com, then before starting:
-`set GROQ_API_KEY=your_key` (the app works fine without it).
+*Note:* For optional AI suggestions, get a free key at https://console.groq.com/keys, copy `ml-service/.env.example` to `ml-service/.env` and paste the key; setting `GROQ_API_KEY` in the shell also works; the app works without it.
 
-**Terminal 2 — website** (first time: `npm install`):
+**Terminal 2 — website** (run from repo root):
 
-```bat
-cd D:\resume-analyser\web
+```bash
+cd web
+npm install  # first time only
 npm run dev
 ```
+
+*Note:* The site calls the ML service at http://localhost:8000 by default; set `NEXT_PUBLIC_ML_API` to point elsewhere (this is read in `web/lib/api.js`).
 
 Open **http://localhost:3000** → **upload your resume (PDF / DOCX / TXT)** or paste text,
 add the job description (or click *load sample*) → **Analyse match**. The **Model
