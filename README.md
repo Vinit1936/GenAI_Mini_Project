@@ -40,7 +40,7 @@ project.md           complete handoff document (datasets, configs, metrics, hist
 .qa/                 verification scripts + local test harnesses (safe to ignore/delete)
 ```
 
-## Syllabus coverage (for the viva)
+## Syllabus coverage
 
 | Topic | Where |
 |---|---|

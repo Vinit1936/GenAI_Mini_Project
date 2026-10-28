@@ -520,19 +520,3 @@ npm install
 npm run dev
 ```
 *Open Application:* Navigate to `http://localhost:3000`.
-
----
-
-## 10. Viva / Presentation Q&A Preparation
-
-### Q1: Why not just use GPT-4 or Claude to score resumes?
-> **Answer:** Commercial LLMs are black boxes that hallucinate, suffer from severe prompt drift, fail to provide reproducible mathematical scores, and cost money on every API call. ResumeLens uses real, deterministic models trained on actual candidate data: a DistilBERT sequence classifier for role categorization, a DistilBERT token classifier for NER, a custom PyTorch BiLSTM for section validation, and MiniLM sentence embeddings for dense cosine distance. The LLM is used strictly as a grounded, non-hallucinating coach that only acts on validated model outputs.
-
-### Q2: What is the benefit of your Hybrid Skill Matcher over standard keyword ATS?
-> **Answer:** Traditional ATS systems use rigid string exact-matches; a candidate writing `Kubernetes` is rejected if the JD asks for `k8s`. ResumeLens uses a 3-tier cascade: exact match $\rightarrow$ domain tech alias normalization $\rightarrow$ MiniLM cosine embedding similarity ($\ge 0.74$). This identifies synonyms and acronyms naturally without penalizing candidates for valid naming conventions.
-
-### Q3: How do you prevent demographic bias from affecting the ATS Match Score?
-> **Answer:** We enforce a strict privacy sanitization barrier (`strip_personal`). Before scoring vectors are computed, candidate names (detected via our DistilBERT NER model), emails, phone numbers, URLs, and gendered pronouns are scrubbed. The candidate's identity is visually highlighted for their own preview, but the scoring algorithms evaluate purely merit-based qualifications.
-
-### Q4: How does the Google XYZ Formula analyzer work?
-> **Answer:** It codifies Google's hiring formula: *Accomplished [X] as measured by [Y], by doing [Z]*. Using NLP and regex classification, it verifies whether bullet points open with high-impact power verbs (`Architected`, `Deployed`), contain measurable business metrics (`12%`, `$2M`, `80ms`, `2M requests/day`), and explain the methodology. It provides actionable coaching advice for every weak line.
